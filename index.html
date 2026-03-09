@@ -4,6 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Skinistry Booth POS</title>
+    
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Skinistry">
+    <link rel="apple-touch-icon" href="https://ui-avatars.com/api/?name=Skinistry&background=2c3e50&color=fff&size=180">
+    
     <style>
         :root {
             --primary: #2c3e50;
@@ -22,6 +28,9 @@
             color: var(--text);
             margin: 0;
             padding: 20px;
+            /* Extra padding at the top for full-screen iPad mode */
+            padding-top: env(safe-area-inset-top, 20px); 
+            user-select: none; /* Prevents text highlighting when tapping fast */
         }
         .container {
             max-width: 800px;
@@ -188,7 +197,6 @@
             cursor: pointer;
             box-shadow: 0 2px 6px rgba(0,0,0,0.08); 
             color: #333;
-            user-select: none;
             transition: transform 0.1s, box-shadow 0.1s;
         }
         .product-card:active {
@@ -210,7 +218,6 @@
             padding: 10px 15px;
             touch-action: none; 
             display: inline-block;
-            user-select: none;
         }
         .drag-handle:active {
             cursor: grabbing;
@@ -632,7 +639,6 @@
             filterStaff.appendChild(option2);
         });
         
-        // Load the saved float into the settings input
         document.getElementById('dailyFloat').value = cashFloat;
         
         setupDragAndDrop();
@@ -758,7 +764,6 @@
         if (total < 0) total = 0;
         document.getElementById('cartTotal').textContent = total.toFixed(2);
         
-        // Update the change calculator if cash is currently selected
         calculateChange();
     }
 
@@ -803,7 +808,6 @@
         document.getElementById('discount').value = 0;
         document.getElementById('paymentMethod').value = 'DuitNow'; 
         
-        // Reset cash fields
         document.getElementById('cashReceived').value = '';
         document.getElementById('changeDue').textContent = '0.00';
         toggleCashFields();
@@ -904,7 +908,7 @@
         
         const todayStr = new Date().toLocaleString('en-MY', { day: '2-digit', month: 'short', year: 'numeric' });
         let todayTotal = 0;
-        let todayCashSales = 0; // NEW: Track just cash sales
+        let todayCashSales = 0; 
         let weekTotal = 0;
 
         let todayDateObj = new Date();
@@ -1211,6 +1215,10 @@
             tbody.appendChild(tr);
         });
     }
+
+    // Startup
+    initUI();
+    applyFilter();
 </script>
 </body>
 </html>

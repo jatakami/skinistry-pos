@@ -309,7 +309,7 @@
 <div class="container">
     <div class="header">
         <h2 style="margin: 0 0 5px 0;">Skinistry Booth POS</h2>
-        <div id="cloudStatus" class="cloud-status">Connecting to Cloud... ⏳</div>
+        <div id="cloudStatus" class="cloud-status">Loading Data... ⏳</div>
     </div>
     
     <div class="tabs">
@@ -447,6 +447,21 @@
     </div>
 
     <div id="settings" class="content">
+
+        <div style="background: #e8f4f8; padding: 15px; border-radius: 12px; border: 1px solid #bce8f1; margin-bottom: 25px;">
+            <h3 style="margin-top: 0; color: var(--primary);">☁️ Cloud Sync Center</h3>
+            <p style="font-size: 13px; color: #555; margin-bottom: 15px;">Use these controls if your devices get out of sync due to offline sales.</p>
+            <div class="form-group flex-row">
+                <div style="flex: 1;">
+                    <button class="ios-btn" style="background: var(--ios-blue); color: white; width: 100%; justify-content: center; padding: 12px;" onclick="forcePush()">⬆️ Push to Cloud (Save iPad Data)</button>
+                </div>
+                <div style="flex: 1;">
+                    <button class="ios-btn" style="background: #FF9500; color: white; width: 100%; justify-content: center; padding: 12px;" onclick="forcePull()">⬇️ Pull from Cloud (Load Web Data)</button>
+                </div>
+            </div>
+            <p id="syncMessage" style="color: green; font-weight: bold; text-align: center; margin: 5px 0 0 0; min-height: 20px;"></p>
+        </div>
+
         <h3>Daily Cash Float</h3>
         <p style="font-size: 14px; color: #666;">Set the petty cash in your drawer at the start of the day for accurate balancing.</p>
         <div class="form-group flex-row">
@@ -538,31 +553,35 @@
     let draggingRow = null;
     let currentlyFilteredSales = sales;
 
+    // OFFLINE-FIRST ARCHITECTURE
     window.onload = async function() {
-        try {
-            const response = await fetch(WEB_APP_URL);
-            const cloudData = await response.json();
+        // Only fetch from cloud if the iPad has absolutely NO data (First Time Load)
+        if (inventory.length === 0 && sales.length === 0) {
+            try {
+                document.getElementById('cloudStatus').innerHTML = "First Load: Fetching Cloud... ⏳";
+                const response = await fetch(WEB_APP_URL);
+                const cloudData = await response.json();
+                
+                if (cloudData.inventory) inventory = cloudData.inventory;
+                if (cloudData.sales) sales = cloudData.sales;
+                if (cloudData.staff) staffList = cloudData.staff;
+                
+                saveDataLocallyOnly();
+                document.getElementById('cloudStatus').innerHTML = "Cloud Synced ✅";
+            } catch (error) {
+                document.getElementById('cloudStatus').innerHTML = "Offline Mode ⚠️ (Setting Defaults)";
+                inventory = [
+                    { name: 'Marine Collagen Serum', price: 85.00, stock: 50, color: '#e0f7fa' },
+                    { name: 'Brightening Set', price: 150.00, stock: 20, color: '#fff9c4' }
+                ];
+                staffList = ['Staff 1', 'Staff 2'];
+            }
+        } else {
+            // Normal Boot: Load instantly from safe local memory, do NOT overwrite from cloud.
+            document.getElementById('cloudStatus').innerHTML = "Local Data Loaded 📱";
             
-            if (cloudData.inventory) inventory = cloudData.inventory;
-            if (cloudData.sales) sales = cloudData.sales;
-            if (cloudData.staff) staffList = cloudData.staff;
-            
-            document.getElementById('cloudStatus').innerHTML = "Cloud Synced ✅";
-            
-            localStorage.setItem('skinistry_inv', JSON.stringify(inventory));
-            localStorage.setItem('skinistry_sales', JSON.stringify(sales));
-            localStorage.setItem('skinistry_staff', JSON.stringify(staffList));
-
-        } catch (error) {
-            document.getElementById('cloudStatus').innerHTML = "Offline Mode ⚠️ (Using Local Data)";
-        }
-
-        if (inventory.length === 0) {
-            inventory = [
-                { name: 'Marine Collagen Serum', price: 85.00, stock: 50, color: '#e0f7fa' },
-                { name: 'Brightening Set', price: 150.00, stock: 20, color: '#fff9c4' }
-            ];
-            staffList = ['Staff 1', 'Staff 2'];
+            // Quietly attempt to push any offline sales up to the cloud in the background
+            forcePush(true); 
         }
 
         currentlyFilteredSales = sales;
@@ -570,11 +589,21 @@
         applyFilter();
     };
 
-    async function saveData() {
+    function saveDataLocallyOnly() {
         localStorage.setItem('skinistry_inv', JSON.stringify(inventory));
         localStorage.setItem('skinistry_sales', JSON.stringify(sales));
         localStorage.setItem('skinistry_staff', JSON.stringify(staffList));
+    }
 
+    async function saveData() {
+        saveDataLocallyOnly();
+        // Quietly push to cloud after saving locally
+        forcePush(true); 
+    }
+
+    // MANUAL SYNC CONTROLS
+    async function forcePush(isSilent = false) {
+        if (!isSilent) document.getElementById('syncMessage').textContent = "Pushing data to cloud...";
         document.getElementById('cloudStatus').innerHTML = "Syncing... ⏳";
         
         try {
@@ -587,9 +616,43 @@
                     sales: sales
                 })
             });
+            if (!isSilent) {
+                document.getElementById('syncMessage').textContent = "✅ Successfully pushed iPad data to cloud!";
+                setTimeout(() => document.getElementById('syncMessage').textContent = '', 3000);
+            }
             document.getElementById('cloudStatus').innerHTML = "Cloud Synced ✅";
         } catch (error) {
-            document.getElementById('cloudStatus').innerHTML = "Offline Mode ⚠️ (Will sync later)";
+            if (!isSilent) {
+                document.getElementById('syncMessage').textContent = "❌ Failed to push. You are offline.";
+                setTimeout(() => document.getElementById('syncMessage').textContent = '', 3000);
+            }
+            document.getElementById('cloudStatus').innerHTML = "Offline Mode ⚠️ (Data safe on iPad)";
+        }
+    }
+
+    async function forcePull() {
+        if(!confirm("WARNING: This will overwrite your iPad's data with whatever is in the Google Cloud. Are you sure you want to pull?")) return;
+        
+        document.getElementById('syncMessage').textContent = "Pulling latest data from cloud...";
+        try {
+            const response = await fetch(WEB_APP_URL);
+            const cloudData = await response.json();
+            
+            if (cloudData.inventory) inventory = cloudData.inventory;
+            if (cloudData.sales) sales = cloudData.sales;
+            if (cloudData.staff) staffList = cloudData.staff;
+            
+            saveDataLocallyOnly();
+            currentlyFilteredSales = sales;
+            initUI();
+            applyFilter();
+            
+            document.getElementById('syncMessage').textContent = "✅ Successfully pulled data from cloud!";
+            setTimeout(() => document.getElementById('syncMessage').textContent = '', 3000);
+            document.getElementById('cloudStatus').innerHTML = "Cloud Synced ✅";
+        } catch (error) {
+            document.getElementById('syncMessage').textContent = "❌ Failed to pull. You are offline.";
+            setTimeout(() => document.getElementById('syncMessage').textContent = '', 3000);
         }
     }
 
@@ -889,25 +952,38 @@
         let dailyTotals = {};
         let filteredTotal = 0;
         
-        const todayStr = new Date().toLocaleString('en-MY', { day: '2-digit', month: 'short', year: 'numeric' });
         let todayTotal = 0;
         let todayCashSales = 0; 
         let weekTotal = 0;
 
-        let todayDateObj = new Date();
-        todayDateObj.setHours(0,0,0,0);
-        let sevenDaysAgo = new Date(todayDateObj);
-        sevenDaysAgo.setDate(todayDateObj.getDate() - 7);
+        // Generate an array of exact text strings for the last 7 days
+        let recentDays = [];
+        let todayStr = "";
+
+        for (let i = 0; i < 7; i++) {
+            let d = new Date();
+            d.setDate(d.getDate() - i); // Go back 'i' days
+            
+            // Format it exactly how the checkout button formatted it
+            let dString = d.toLocaleString('en-MY', { day: '2-digit', month: 'short', year: 'numeric' });
+            let cleanDString = dString.split(',')[0].split(' at ')[0].trim();
+            
+            recentDays.push(cleanDString);
+            if (i === 0) todayStr = cleanDString; // Save today's exact string
+        }
 
         currentlyFilteredSales.forEach(sale => {
-            let datePart = sale.time.split(',')[0].trim();
-            if (!datePart.includes(' ')) datePart = "Previous Sales"; 
+            // Extract the text date from the saved sale
+            let datePart = sale.time.split(',')[0].split(' at ')[0].trim(); 
+            if (!datePart) datePart = "Previous Sales"; 
 
+            // Add to the daily breakdown list
             if (!dailyTotals[datePart]) dailyTotals[datePart] = 0;
             dailyTotals[datePart] += sale.total;
             filteredTotal += sale.total;
 
             if (!isFiltering) {
+                // If the text perfectly matches today's text
                 if (datePart === todayStr) {
                     todayTotal += sale.total;
                     if (sale.method === 'Cash') {
@@ -915,13 +991,14 @@
                     }
                 }
 
-                let realSaleDate = new Date(datePart);
-                if (!isNaN(realSaleDate.getTime()) && realSaleDate >= sevenDaysAgo && realSaleDate <= new Date(todayDateObj.getTime() + 86400000)) {
+                // If the text matches any of the last 7 days' text
+                if (recentDays.includes(datePart)) {
                     weekTotal += sale.total;
                 }
             }
         });
 
+        // Update the UI Cards
         const cardToday = document.getElementById('cardToday');
         const cardDrawer = document.getElementById('cardDrawer');
         const cardWeek = document.getElementById('cardWeek');
@@ -947,6 +1024,7 @@
             document.getElementById('breakdownTitle').textContent = "Daily Breakdown";
         }
 
+        // Build the scrolling list of daily totals
         let breakdownHtml = '';
         const sortedDates = Object.keys(dailyTotals).sort((a,b) => new Date(b) - new Date(a));
         
@@ -1005,7 +1083,9 @@
         const price = parseFloat(document.getElementById('editProdPrice').value);
         const addStock = parseInt(document.getElementById('editProdStock').value) || 0;
         const color = document.getElementById('editProdColor').value;
+        
         if (!name || isNaN(price) || price < 0) return alert("Please enter a valid product name and price.");
+        
         let existingIndex = inventory.findIndex(i => i.name.toLowerCase() === name.toLowerCase());
         if (existingIndex >= 0) {
             inventory[existingIndex].price = price;
@@ -1014,12 +1094,15 @@
         } else {
             inventory.push({ name: name, price: price, stock: addStock, color: color });
         }
+        
         saveData();
         renderProductGrid();
+        
         document.getElementById('editProdName').value = '';
         document.getElementById('editProdPrice').value = '0';
         document.getElementById('editProdStock').value = '0';
         document.getElementById('editProdColor').value = '#e0f7fa';
+        
         const msg = document.getElementById('productMessage');
         msg.textContent = "Product saved successfully!";
         setTimeout(() => msg.textContent = '', 2000);
@@ -1028,6 +1111,7 @@
     function editPrice(index) {
         const currentPrice = inventory[index].price;
         const newPrice = prompt(`Enter new price for ${inventory[index].name} (RM):`, currentPrice);
+        
         if (newPrice !== null && newPrice.trim() !== "" && !isNaN(newPrice) && parseFloat(newPrice) >= 0) {
             inventory[index].price = parseFloat(newPrice);
             saveData();
@@ -1039,6 +1123,7 @@
     function editStock(index) {
         const currentStock = inventory[index].stock;
         const newStock = prompt(`Update stock count for ${inventory[index].name}:`, currentStock);
+        
         if (newStock !== null && newStock.trim() !== "" && !isNaN(newStock) && parseInt(newStock) >= 0) {
             inventory[index].stock = parseInt(newStock);
             saveData();
@@ -1050,12 +1135,14 @@
     function addStaff() {
         const name = document.getElementById('newStaffName').value.trim();
         if (!name) return;
+        
         if (!staffList.includes(name)) {
             staffList.push(name);
             saveData();
             initUI(); 
             renderStaff();
         }
+        
         document.getElementById('newStaffName').value = '';
         const msg = document.getElementById('staffMessage');
         msg.textContent = "Staff added successfully!";
@@ -1065,6 +1152,7 @@
     function editStaff(index) {
         const currentName = staffList[index];
         const newName = prompt("Edit staff name:", currentName);
+        
         if (newName !== null && newName.trim() !== "") {
             staffList[index] = newName.trim();
             saveData();
@@ -1083,7 +1171,12 @@
     }
 
     function deleteSale(filteredIndex) {
-        if(confirm("Are you sure you want to VOID this transaction? Stock will be returned.")) {
+        const password = prompt("Manager Authorization Required.\nEnter PIN to VOID sale:");
+        
+        if (password === null) return; 
+        if (password !== "1234") return alert("❌ Incorrect Password. Void cancelled.");
+
+        if(confirm("Password accepted. Are you sure you want to VOID this transaction? Stock will be returned.")) {
             const voidedSale = currentlyFilteredSales[filteredIndex];
             const masterIndex = sales.indexOf(voidedSale);
             
@@ -1116,11 +1209,13 @@
     function renderInventory() {
         const tbody = document.getElementById('inventoryTable');
         tbody.innerHTML = '';
+        
         inventory.forEach((item, index) => {
             const tr = document.createElement('tr');
             tr.setAttribute('data-index', index); 
             const stockClass = item.stock <= 5 ? 'low-stock' : '';
             const itemColor = item.color || '#ffffff';
+            
             tr.innerHTML = `
                 <td style="width: 40px; text-align: center;"><div class="drag-handle">☰</div></td>
                 <td style="width: 50px;"><div class="color-swatch" style="background-color: ${itemColor};"></div></td>
@@ -1184,6 +1279,7 @@
     function renderStaff() {
         const tbody = document.getElementById('staffTable');
         tbody.innerHTML = '';
+        
         staffList.forEach((staff, index) => {
             const tr = document.createElement('tr');
             tr.innerHTML = `

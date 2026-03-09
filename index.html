@@ -1,0 +1,1216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Skinistry Booth POS</title>
+    <style>
+        :root {
+            --primary: #2c3e50;
+            --secondary: #3498db;
+            --success: #34C759; 
+            --danger: #FF3B30; 
+            --background: #f4f7f6;
+            --text: #333;
+            --ios-gray: #F2F2F7;
+            --ios-blue: #007AFF;
+            --ios-purple: #5856D6;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--background);
+            color: var(--text);
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .header {
+            background: var(--primary);
+            color: white;
+            padding: 15px;
+            text-align: center;
+            position: relative;
+        }
+        .cloud-status {
+            font-size: 13px;
+            background: rgba(0,0,0,0.2);
+            padding: 4px 10px;
+            border-radius: 20px;
+            display: inline-block;
+            margin-top: 5px;
+        }
+        .tabs {
+            display: flex;
+            background: #eee;
+        }
+        .tab {
+            flex: 1;
+            padding: 15px;
+            text-align: center;
+            cursor: pointer;
+            font-weight: bold;
+            border-bottom: 3px solid transparent;
+        }
+        .tab.active {
+            border-bottom: 3px solid var(--secondary);
+            background: white;
+        }
+        .content {
+            padding: 20px;
+            display: none;
+        }
+        .content.active {
+            display: block;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        select, input, button {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            box-sizing: border-box;
+            font-size: 16px;
+        }
+        
+        .btn-success { 
+            background: var(--success); 
+            color: white; border: none; font-weight: bold; cursor: pointer; margin-top: 10px;
+        }
+        .btn-success:active { opacity: 0.8; }
+        
+        .ios-action-group {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+        .ios-btn {
+            background-color: var(--ios-gray);
+            color: var(--ios-blue);
+            border: none;
+            padding: 8px 14px;
+            border-radius: 10px; 
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.1s;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            width: auto;
+            margin: 0;
+        }
+        .ios-btn:active {
+            background-color: #E5E5EA;
+            transform: scale(0.95);
+        }
+        .ios-btn-danger {
+            color: var(--danger);
+            background-color: #FFE5E5;
+        }
+        .ios-btn-danger:active {
+            background-color: #FFD1D1;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        th, td {
+            padding: 16px 12px; 
+            text-align: left;
+            border-bottom: 1px solid #eee;
+            vertical-align: middle;
+        }
+        th {
+            background: #f9f9f9;
+            color: #666;
+            font-weight: 600;
+        }
+        .low-stock {
+            color: var(--danger);
+            font-weight: bold;
+        }
+        hr {
+            border: 0;
+            border-top: 1px solid #ddd;
+            margin: 25px 0;
+        }
+        .flex-row {
+            display: flex;
+            gap: 10px;
+            align-items: flex-end;
+        }
+        .cart-box {
+            background: #fdfdfd;
+            border: 2px dashed #ccc;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+        .cart-summary {
+            margin-top: 15px;
+            text-align: right;
+            font-size: 18px;
+        }
+        .cart-summary input {
+            width: 100px;
+            display: inline-block;
+            margin-left: 10px;
+            padding: 8px;
+        }
+        
+        .product-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        .product-card {
+            padding: 15px 10px;
+            border-radius: 12px; 
+            border: 4px solid transparent;
+            text-align: center;
+            cursor: pointer;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.08); 
+            color: #333;
+            user-select: none;
+            transition: transform 0.1s, box-shadow 0.1s;
+        }
+        .product-card:active {
+            transform: scale(0.95);
+            box-shadow: inset 0 2px 5px rgba(0,0,0,0.15);
+        }
+        .color-swatch {
+            width: 25px;
+            height: 25px;
+            border-radius: 50%;
+            display: inline-block;
+            border: 1px solid #ccc;
+        }
+        
+        .drag-handle {
+            font-size: 24px;
+            color: #C7C7CC; 
+            cursor: grab;
+            padding: 10px 15px;
+            touch-action: none; 
+            display: inline-block;
+            user-select: none;
+        }
+        .drag-handle:active {
+            cursor: grabbing;
+            color: #8E8E93;
+        }
+        .dragging {
+            background-color: #F2F2F7 !important;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.12);
+            opacity: 0.95;
+            transform: scale(1.02); 
+        }
+
+        /* Dashboard Styles */
+        .dashboard {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        .dash-card {
+            flex: 1;
+            min-width: 160px;
+            padding: 15px;
+            border-radius: 12px;
+            color: white;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+        .dash-card.blue { background: linear-gradient(135deg, var(--ios-blue), #0056b3); }
+        .dash-card.green { background: linear-gradient(135deg, var(--success), #248A3D); }
+        .dash-card.purple { background: linear-gradient(135deg, var(--ios-purple), #4B49B6); }
+        .dash-card.orange { background: linear-gradient(135deg, #FF9500, #D67D00); } 
+        .dash-card h4 { margin: 0 0 10px 0; font-size: 14px; opacity: 0.9; font-weight: normal; }
+        .dash-card div { font-size: 24px; font-weight: bold; }
+        
+        .daily-breakdown {
+            background: white;
+            border: 1px solid #E5E5EA;
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 25px;
+        }
+        .daily-breakdown h4 { margin: 0 0 10px 0; color: #666; font-size: 14px; }
+        .scroll-list {
+            display: flex;
+            overflow-x: auto;
+            gap: 10px;
+            padding-bottom: 10px;
+        }
+        .daily-item {
+            background: var(--ios-gray);
+            padding: 12px 15px;
+            border-radius: 10px;
+            min-width: 120px;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            flex-shrink: 0;
+        }
+        .daily-item span { font-size: 13px; color: #666; font-weight: 600; }
+        .daily-item strong { font-size: 18px; color: var(--primary); }
+
+        .filter-bar {
+            background: #f0f4f8;
+            padding: 15px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: flex-end;
+        }
+        .filter-group {
+            flex: 1;
+            min-width: 120px;
+        }
+        .filter-group label { font-size: 13px; color: #555; margin-bottom: 4px; }
+        .filter-group input, .filter-group select { padding: 10px; font-size: 14px; border-radius: 8px; border: 1px solid #ccc; }
+
+        @media print {
+            body { background: white; margin: 0; padding: 0; }
+            .container { display: none !important; }
+            #printArea { 
+                display: block !important; 
+                width: 80mm; 
+                max-width: 100%;
+                margin: 0; 
+                font-family: monospace; 
+                font-size: 14px; 
+                color: #000;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div id="printArea"></div>
+
+<div class="container">
+    <div class="header">
+        <h2 style="margin: 0 0 5px 0;">Skinistry Booth POS</h2>
+        <div id="cloudStatus" class="cloud-status">Connecting to Cloud... ⏳</div>
+    </div>
+    
+    <div class="tabs">
+        <div class="tab active" onclick="switchTab('pos', this)">New Sale</div>
+        <div class="tab" onclick="switchTab('inventory', this)">Inventory</div>
+        <div class="tab" onclick="switchTab('logs', this)">Sales Log</div>
+        <div class="tab" onclick="switchTab('settings', this)">Settings</div>
+    </div>
+
+    <div id="pos" class="content active">
+        <div class="form-group">
+            <label>Salesperson</label>
+            <select id="salesperson"></select>
+        </div>
+        
+        <div style="background: #f0f4f8; padding: 15px; border-radius: 12px;">
+            <label style="font-size: 18px; color: var(--primary);">Tap a product to add to cart instantly!</label>
+            <div id="productGrid" class="product-grid" style="margin-top: 15px;"></div>
+        </div>
+
+        <div class="cart-box">
+            <h3 style="margin-top: 0;">Current Cart</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Item</th>
+                        <th>Qty</th>
+                        <th>RM</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody id="cartTable"></tbody>
+            </table>
+            
+            <div class="cart-summary">
+                <p>Subtotal: RM <span id="cartSubtotal">0.00</span></p>
+                <p style="color: var(--danger);">
+                    Discount (RM): <input type="number" id="discount" value="0" min="0" step="0.50" oninput="updateGrandTotal()">
+                </p>
+                <h3 style="color: var(--success);">Total to Pay: RM <span id="cartTotal">0.00</span></h3>
+                
+                <div style="margin-top: 15px; text-align: left;">
+                    <label>Payment Method</label>
+                    <select id="paymentMethod" style="font-weight: bold; border: 2px solid var(--primary); border-radius: 10px;" onchange="toggleCashFields()">
+                        <option value="DuitNow">DuitNow / QR</option>
+                        <option value="Cash">Cash</option>
+                    </select>
+                </div>
+
+                <div id="cashFields" style="display: none; margin-top: 15px; text-align: left; background: #e8f4f8; padding: 15px; border-radius: 10px; border: 1px solid #bce8f1;">
+                    <label style="color: var(--primary);">Amount Received (RM)</label>
+                    <input type="number" id="cashReceived" min="0" step="1" placeholder="e.g. 100" oninput="calculateChange()" style="font-size: 18px; font-weight: bold;">
+                    <h3 style="color: var(--ios-blue); margin: 15px 0 0 0;">Change Due: RM <span id="changeDue">0.00</span></h3>
+                </div>
+
+                <button class="btn-success" style="width: 100%; font-size: 20px; padding: 15px; border-radius: 10px;" onclick="checkout()">Checkout Cart</button>
+                <div id="saleMessage" style="font-weight: bold; text-align: center; margin-top: 15px;"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="inventory" class="content">
+        <table>
+            <thead>
+                <tr>
+                    <th></th>
+                    <th>Color</th>
+                    <th>Product</th>
+                    <th>Price (RM)</th>
+                    <th>Stock</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="inventoryTable"></tbody>
+        </table>
+    </div>
+
+    <div id="logs" class="content">
+        
+        <div class="filter-bar">
+            <div class="filter-group">
+                <label>Start Date</label>
+                <input type="date" id="filterStart">
+            </div>
+            <div class="filter-group">
+                <label>End Date</label>
+                <input type="date" id="filterEnd">
+            </div>
+            <div class="filter-group">
+                <label>Staff Member</label>
+                <select id="filterStaff">
+                    <option value="All">All Staff</option>
+                </select>
+            </div>
+            <div class="filter-group" style="display: flex; gap: 5px;">
+                <button class="ios-btn" style="background: var(--ios-blue); color: white; border-radius: 8px; flex: 1; justify-content: center; height: 40px;" onclick="applyFilter()">Search</button>
+                <button class="ios-btn" style="border-radius: 8px; flex: 1; justify-content: center; height: 40px;" onclick="clearFilter()">Clear</button>
+            </div>
+        </div>
+
+        <div id="dashboardCards" class="dashboard">
+            <div class="dash-card blue" id="cardToday">
+                <h4 id="titleToday">Today's Sales</h4>
+                <div id="dashToday">RM 0.00</div>
+            </div>
+            <div class="dash-card purple" id="cardDrawer">
+                <h4>Cash in Drawer</h4>
+                <div id="dashDrawer">RM 0.00</div>
+                <div style="font-size: 12px; margin-top: 5px; opacity: 0.8;">(Float + Cash Sales)</div>
+            </div>
+            <div class="dash-card green" id="cardWeek">
+                <h4 id="titleWeek">Past 7 Days</h4>
+                <div id="dashWeek">RM 0.00</div>
+            </div>
+        </div>
+        
+        <div class="daily-breakdown">
+            <h4 id="breakdownTitle">Daily Breakdown</h4>
+            <div id="dashDailyList" class="scroll-list"></div>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Date & Time</th>
+                    <th>Staff</th>
+                    <th>Method</th>
+                    <th>Items Purchased</th>
+                    <th>Total (RM)</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="salesTable"></tbody>
+        </table>
+    </div>
+
+    <div id="settings" class="content">
+        <h3>Daily Cash Float</h3>
+        <p style="font-size: 14px; color: #666;">Set the petty cash in your drawer at the start of the day for accurate balancing.</p>
+        <div class="form-group flex-row">
+            <div style="flex: 2;">
+                <label>Opening Cash (RM)</label>
+                <input type="number" id="dailyFloat" value="0" min="0" step="1">
+            </div>
+            <div style="flex: 1;">
+                <button class="ios-btn" style="background: var(--ios-blue); color: white; width: 100%; height: 45px; justify-content: center;" onclick="saveFloat()">Save Float</button>
+            </div>
+        </div>
+        <p id="floatMessage" style="color: green; font-weight: bold; height: 20px; margin-top: 0;"></p>
+
+        <hr>
+
+        <h3>Add or Update Product</h3>
+        <p style="font-size: 14px; color: #666;">Enter a product name to restock it, or a new name to add it to inventory.</p>
+        
+        <div class="form-group flex-row">
+            <div style="flex: 3;">
+                <label>Product Name</label>
+                <input type="text" id="editProdName" placeholder="e.g., Marine Collagen Serum">
+            </div>
+            <div style="flex: 1;">
+                <label>Color</label>
+                <input type="color" id="editProdColor" value="#e0f7fa" style="height: 45px; padding: 2px; cursor: pointer; border-radius: 8px;">
+            </div>
+        </div>
+
+        <div class="form-group" style="display: flex; gap: 10px;">
+            <div style="flex: 1;">
+                <label>Price (RM)</label>
+                <input type="number" id="editProdPrice" value="0" min="0" step="0.50">
+            </div>
+            <div style="flex: 1;">
+                <label>Add Stock</label>
+                <input type="number" id="editProdStock" value="0" min="0">
+            </div>
+        </div>
+        <button class="btn-success" style="border-radius: 10px;" onclick="saveProduct()">Save Product</button>
+        <p id="productMessage" style="color: green; font-weight: bold; text-align: center; height: 20px;"></p>
+
+        <hr>
+
+        <h3>Manage Staff</h3>
+        <div class="form-group flex-row">
+            <div style="flex: 2;">
+                <label>Add New Staff</label>
+                <input type="text" id="newStaffName" placeholder="e.g., Jane Doe">
+            </div>
+            <div style="flex: 1;">
+                <button class="btn-success" style="margin-top: 0; border-radius: 10px;" onclick="addStaff()">Add Staff</button>
+            </div>
+        </div>
+        <p id="staffMessage" style="color: green; font-weight: bold; text-align: center; height: 20px;"></p>
+        
+        <table>
+            <thead>
+                <tr>
+                    <th>Staff Name</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="staffTable"></tbody>
+        </table>
+
+        <hr>
+        
+        <h3>Data Management</h3>
+        <p style="font-size: 14px; color: #666;">Download your complete sales history directly to your iPad.</p>
+        <button class="ios-btn" style="width: 100%; font-size: 18px; padding: 15px; border: 2px solid var(--ios-blue); justify-content: center;" onclick="exportToCSV()">
+            📊 Export Sales to Excel (CSV)
+        </button>
+    </div>
+</div>
+
+<script>
+    // ==========================================
+    // YOUR LIVE GOOGLE SCRIPT URL:
+    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzNgixNDFBBTsUXmTNXKayPEv5toDhSZ0IgsUyPgeQzNj3wLWffFig5EoK8OHxVxF0/exec"; 
+    // ==========================================
+
+    let inventory = JSON.parse(localStorage.getItem('skinistry_inv')) || [];
+    let sales = JSON.parse(localStorage.getItem('skinistry_sales')) || [];
+    let staffList = JSON.parse(localStorage.getItem('skinistry_staff')) || [];
+    let cashFloat = parseFloat(localStorage.getItem('skinistry_float')) || 0; 
+    
+    let cart = []; 
+    let draggingRow = null;
+    let currentlyFilteredSales = sales;
+
+    window.onload = async function() {
+        try {
+            const response = await fetch(WEB_APP_URL);
+            const cloudData = await response.json();
+            
+            if (cloudData.inventory) inventory = cloudData.inventory;
+            if (cloudData.sales) sales = cloudData.sales;
+            if (cloudData.staff) staffList = cloudData.staff;
+            
+            document.getElementById('cloudStatus').innerHTML = "Cloud Synced ✅";
+            
+            localStorage.setItem('skinistry_inv', JSON.stringify(inventory));
+            localStorage.setItem('skinistry_sales', JSON.stringify(sales));
+            localStorage.setItem('skinistry_staff', JSON.stringify(staffList));
+
+        } catch (error) {
+            document.getElementById('cloudStatus').innerHTML = "Offline Mode ⚠️ (Using Local Data)";
+        }
+
+        if (inventory.length === 0) {
+            inventory = [
+                { name: 'Marine Collagen Serum', price: 85.00, stock: 50, color: '#e0f7fa' },
+                { name: 'Brightening Set', price: 150.00, stock: 20, color: '#fff9c4' }
+            ];
+            staffList = ['Staff 1', 'Staff 2'];
+        }
+
+        currentlyFilteredSales = sales;
+        initUI();
+        applyFilter();
+    };
+
+    async function saveData() {
+        localStorage.setItem('skinistry_inv', JSON.stringify(inventory));
+        localStorage.setItem('skinistry_sales', JSON.stringify(sales));
+        localStorage.setItem('skinistry_staff', JSON.stringify(staffList));
+
+        document.getElementById('cloudStatus').innerHTML = "Syncing... ⏳";
+        
+        try {
+            await fetch(WEB_APP_URL, {
+                method: 'POST',
+                body: JSON.stringify({
+                    action: 'saveAll',
+                    inventory: inventory,
+                    staff: staffList,
+                    sales: sales
+                })
+            });
+            document.getElementById('cloudStatus').innerHTML = "Cloud Synced ✅";
+        } catch (error) {
+            document.getElementById('cloudStatus').innerHTML = "Offline Mode ⚠️ (Will sync later)";
+        }
+    }
+
+    function switchTab(tabId, element) {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.content').forEach(c => c.classList.remove('active'));
+        
+        if (element) {
+            element.classList.add('active');
+        } else {
+            document.querySelector(`[onclick="switchTab('${tabId}', this)"]`).classList.add('active');
+        }
+        
+        document.getElementById(tabId).classList.add('active');
+        
+        if(tabId === 'pos') renderProductGrid();
+        if(tabId === 'inventory') renderInventory();
+        if(tabId === 'logs') applyFilter(); 
+        if(tabId === 'settings') renderStaff();
+    }
+
+    function initUI() {
+        const staffSelect = document.getElementById('salesperson');
+        const filterStaff = document.getElementById('filterStaff');
+        
+        staffSelect.innerHTML = '';
+        filterStaff.innerHTML = '<option value="All">All Staff</option>';
+        
+        staffList.forEach(staff => {
+            let option1 = document.createElement('option');
+            option1.value = staff;
+            option1.textContent = staff;
+            staffSelect.appendChild(option1);
+            
+            let option2 = document.createElement('option');
+            option2.value = staff;
+            option2.textContent = staff;
+            filterStaff.appendChild(option2);
+        });
+        
+        // Load the saved float into the settings input
+        document.getElementById('dailyFloat').value = cashFloat;
+        
+        setupDragAndDrop();
+        renderProductGrid();
+    }
+
+    function setupDragAndDrop() {
+        const tbody = document.getElementById('inventoryTable');
+        function handleStart(e) {
+            if (e.target.classList.contains('drag-handle')) {
+                draggingRow = e.target.closest('tr');
+                draggingRow.classList.add('dragging');
+                document.body.style.overflow = 'hidden'; 
+            }
+        }
+        function handleMove(e) {
+            if (!draggingRow) return;
+            e.preventDefault(); 
+            let clientY = e.type.includes('touch') ? e.touches[0].clientY : e.clientY;
+            let clientX = e.type.includes('touch') ? e.touches[0].clientX : e.clientX;
+            const targetElement = document.elementFromPoint(clientX, clientY);
+            if (targetElement) {
+                const targetRow = targetElement.closest('tr');
+                if (targetRow && targetRow.parentNode === tbody && targetRow !== draggingRow) {
+                    const rect = targetRow.getBoundingClientRect();
+                    const next = (clientY - rect.top) / (rect.bottom - rect.top) > 0.5;
+                    tbody.insertBefore(draggingRow, next ? targetRow.nextSibling : targetRow);
+                }
+            }
+        }
+        function handleEnd(e) {
+            if (!draggingRow) return;
+            draggingRow.classList.remove('dragging');
+            draggingRow = null;
+            document.body.style.overflow = ''; 
+            const rows = tbody.querySelectorAll('tr');
+            let newInventory = [];
+            rows.forEach(row => {
+                const originalIndex = row.getAttribute('data-index');
+                newInventory.push(inventory[originalIndex]);
+            });
+            inventory = newInventory;
+            saveData();
+            renderInventory(); 
+            renderProductGrid();
+        }
+        tbody.addEventListener('touchstart', handleStart, {passive: false});
+        tbody.addEventListener('touchmove', handleMove, {passive: false});
+        tbody.addEventListener('touchend', handleEnd);
+        tbody.addEventListener('mousedown', handleStart);
+        document.addEventListener('mousemove', handleMove, {passive: false});
+        document.addEventListener('mouseup', handleEnd);
+    }
+
+    function renderProductGrid() {
+        const grid = document.getElementById('productGrid');
+        grid.innerHTML = '';
+        if (inventory.length === 0) {
+            grid.innerHTML = '<p style="color: #666; padding: 10px;">No products added yet. Go to Settings.</p>';
+            return;
+        }
+        inventory.forEach((item, index) => {
+            const div = document.createElement('div');
+            div.className = `product-card`;
+            div.style.backgroundColor = item.color || '#ffffff';
+            const stockText = item.stock <= 5 ? `<span style="color: red; font-weight: bold;">${item.stock} left</span>` : `${item.stock} left`;
+            div.innerHTML = `
+                <div style="font-weight: bold; margin-bottom: 5px; font-size: 14px;">${item.name}</div>
+                <div style="font-size: 14px;">RM ${item.price.toFixed(2)}</div>
+                <div style="font-size: 12px; margin-top: 5px;">${stockText}</div>
+            `;
+            div.onclick = () => quickAddToCart(index);
+            grid.appendChild(div);
+        });
+    }
+
+    function quickAddToCart(index) {
+        document.getElementById('saleMessage').innerHTML = '';
+        let product = inventory[index];
+        let existingCartItem = cart.find(c => c.name === product.name);
+        let currentCartQty = existingCartItem ? existingCartItem.qty : 0;
+        if (currentCartQty + 1 > product.stock) {
+            alert(`Not enough stock! You only have ${product.stock} left.`);
+            return;
+        }
+        if (existingCartItem) {
+            existingCartItem.qty += 1;
+            existingCartItem.total = existingCartItem.qty * existingCartItem.price;
+        } else {
+            cart.push({ name: product.name, price: product.price, qty: 1, total: product.price });
+        }
+        renderCart();
+    }
+
+    function removeFromCart(index) {
+        cart.splice(index, 1);
+        renderCart();
+    }
+
+    function renderCart() {
+        const tbody = document.getElementById('cartTable');
+        tbody.innerHTML = '';
+        let subtotal = 0;
+        cart.forEach((item, index) => {
+            subtotal += item.total;
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${item.name}</td>
+                <td>${item.qty}</td>
+                <td>${item.total.toFixed(2)}</td>
+                <td><button class="ios-btn ios-btn-danger" style="padding: 4px 8px;" onclick="removeFromCart(${index})">✕</button></td>
+            `;
+            tbody.appendChild(tr);
+        });
+        document.getElementById('cartSubtotal').textContent = subtotal.toFixed(2);
+        updateGrandTotal();
+    }
+
+    function updateGrandTotal() {
+        let subtotal = cart.reduce((sum, item) => sum + item.total, 0);
+        let discount = parseFloat(document.getElementById('discount').value) || 0;
+        let total = subtotal - discount;
+        if (total < 0) total = 0;
+        document.getElementById('cartTotal').textContent = total.toFixed(2);
+        
+        // Update the change calculator if cash is currently selected
+        calculateChange();
+    }
+
+    function toggleCashFields() {
+        const method = document.getElementById('paymentMethod').value;
+        const cashFields = document.getElementById('cashFields');
+        if (method === 'Cash') {
+            cashFields.style.display = 'block';
+            calculateChange();
+        } else {
+            cashFields.style.display = 'none';
+        }
+    }
+
+    function calculateChange() {
+        const total = parseFloat(document.getElementById('cartTotal').textContent) || 0;
+        const received = parseFloat(document.getElementById('cashReceived').value) || 0;
+        let change = received - total;
+        if (change < 0) change = 0;
+        document.getElementById('changeDue').textContent = change.toFixed(2);
+    }
+
+    function checkout() {
+        if (cart.length === 0) return alert("Cart is empty!");
+        const staff = document.getElementById('salesperson').value;
+        const method = document.getElementById('paymentMethod').value;
+        let discount = parseFloat(document.getElementById('discount').value) || 0;
+        let total = parseFloat(document.getElementById('cartTotal').textContent);
+
+        cart.forEach(cartItem => {
+            let invItem = inventory.find(i => i.name === cartItem.name);
+            if (invItem) invItem.stock -= cartItem.qty;
+        });
+
+        const dateOptions = { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute:'2-digit' };
+        const dateStr = new Date().toLocaleString('en-MY', dateOptions);
+
+        sales.unshift({ time: dateStr, staff: staff, method: method, items: JSON.parse(JSON.stringify(cart)), discount: discount, total: total });
+        saveData();
+
+        cart = [];
+        document.getElementById('discount').value = 0;
+        document.getElementById('paymentMethod').value = 'DuitNow'; 
+        
+        // Reset cash fields
+        document.getElementById('cashReceived').value = '';
+        document.getElementById('changeDue').textContent = '0.00';
+        toggleCashFields();
+
+        renderCart();
+        renderProductGrid(); 
+        calculateDashboard(); 
+        
+        const msg = document.getElementById('saleMessage');
+        msg.innerHTML = `
+            <div style="color: var(--success); font-size: 18px; margin-bottom: 10px;">Checkout Complete! Collected: RM ${total.toFixed(2)}</div>
+            <button class="ios-btn" style="font-size: 16px; padding: 12px 20px; border: 1px solid var(--ios-blue);" onclick="printReceipt(0, true)">🖨️ Print Receipt</button>
+        `;
+    }
+
+    function printReceipt(index, isNewSale = false) {
+        const saleArray = isNewSale ? sales : currentlyFilteredSales;
+        const sale = saleArray[index];
+        
+        let itemsHtml = '';
+        if (sale.items) {
+            sale.items.forEach(i => {
+                itemsHtml += `<div style="display:flex; justify-content:space-between; margin-bottom: 4px;"><span>${i.qty}x ${i.name}</span><span>${i.total.toFixed(2)}</span></div>`;
+            });
+        } else {
+            itemsHtml = `<div style="display:flex; justify-content:space-between; margin-bottom: 4px;"><span>${sale.qty}x ${sale.product}</span><span>${sale.total.toFixed(2)}</span></div>`;
+        }
+        
+        let discountHtml = '';
+        if (sale.discount > 0) {
+            discountHtml = `<div style="display:flex; justify-content:space-between; margin-top: 5px;"><span>Discount</span><span>-${sale.discount.toFixed(2)}</span></div>`;
+        }
+
+        const receiptHtml = `
+            <div style="text-align:center; font-weight:bold; font-size:22px; margin-bottom:15px;">SKINISTRY</div>
+            <div style="margin-bottom:15px; border-bottom:1px dashed #000; padding-bottom:10px;">
+                <div>Date: ${sale.time}</div>
+                <div>Staff: ${sale.staff}</div>
+                <div>Method: ${sale.method || 'Cash'}</div>
+            </div>
+            <div style="margin-bottom:10px; border-bottom:1px dashed #000; padding-bottom:10px;">
+                ${itemsHtml}
+            </div>
+            ${discountHtml}
+            <div style="display:flex; justify-content:space-between; font-weight:bold; font-size:18px; margin-top:10px;">
+                <span>TOTAL</span>
+                <span>RM ${sale.total.toFixed(2)}</span>
+            </div>
+            <div style="text-align:center; margin-top:30px; font-size:14px;">Thank you for your purchase!</div>
+            <div style="text-align:center; margin-top:5px; font-size:12px;">@skinistry_my</div>
+        `;
+        
+        document.getElementById('printArea').innerHTML = receiptHtml;
+        window.print();
+    }
+
+    function applyFilter() {
+        const startDateStr = document.getElementById('filterStart').value; 
+        const endDateStr = document.getElementById('filterEnd').value;
+        const staff = document.getElementById('filterStaff').value;
+
+        let start = startDateStr ? new Date(startDateStr) : null;
+        if (start) start.setHours(0,0,0,0);
+        
+        let end = endDateStr ? new Date(endDateStr) : null;
+        if (end) end.setHours(23,59,59,999);
+
+        let isFiltering = start || end || staff !== "All";
+
+        currentlyFilteredSales = sales.filter(sale => {
+            let match = true;
+            let datePart = sale.time.split(',')[0].trim();
+            let saleDate = new Date(datePart);
+            
+            let isValidDate = !isNaN(saleDate.getTime());
+
+            if (start && isValidDate && saleDate < start) match = false;
+            if (end && isValidDate && saleDate > end) match = false;
+            if (staff !== "All" && sale.staff !== staff) match = false;
+            
+            return match;
+        });
+
+        calculateDashboard(isFiltering);
+        renderSales();
+    }
+
+    function clearFilter() {
+        document.getElementById('filterStart').value = '';
+        document.getElementById('filterEnd').value = '';
+        document.getElementById('filterStaff').value = 'All';
+        applyFilter();
+    }
+
+    function calculateDashboard(isFiltering = false) {
+        let dailyTotals = {};
+        let filteredTotal = 0;
+        
+        const todayStr = new Date().toLocaleString('en-MY', { day: '2-digit', month: 'short', year: 'numeric' });
+        let todayTotal = 0;
+        let todayCashSales = 0; // NEW: Track just cash sales
+        let weekTotal = 0;
+
+        let todayDateObj = new Date();
+        todayDateObj.setHours(0,0,0,0);
+        let sevenDaysAgo = new Date(todayDateObj);
+        sevenDaysAgo.setDate(todayDateObj.getDate() - 7);
+
+        currentlyFilteredSales.forEach(sale => {
+            let datePart = sale.time.split(',')[0].trim();
+            if (!datePart.includes(' ')) datePart = "Previous Sales"; 
+
+            if (!dailyTotals[datePart]) dailyTotals[datePart] = 0;
+            dailyTotals[datePart] += sale.total;
+            filteredTotal += sale.total;
+
+            if (!isFiltering) {
+                if (datePart === todayStr) {
+                    todayTotal += sale.total;
+                    if (sale.method === 'Cash') {
+                        todayCashSales += sale.total;
+                    }
+                }
+
+                let realSaleDate = new Date(datePart);
+                if (!isNaN(realSaleDate.getTime()) && realSaleDate >= sevenDaysAgo && realSaleDate <= new Date(todayDateObj.getTime() + 86400000)) {
+                    weekTotal += sale.total;
+                }
+            }
+        });
+
+        const cardToday = document.getElementById('cardToday');
+        const cardDrawer = document.getElementById('cardDrawer');
+        const cardWeek = document.getElementById('cardWeek');
+        
+        if (isFiltering) {
+            cardToday.className = "dash-card orange";
+            document.getElementById('titleToday').textContent = "Filtered Total Result";
+            document.getElementById('dashToday').textContent = 'RM ' + filteredTotal.toFixed(2);
+            cardDrawer.style.display = 'none'; 
+            cardWeek.style.display = 'none'; 
+            document.getElementById('breakdownTitle').textContent = "Filtered Breakdown by Date";
+        } else {
+            cardToday.className = "dash-card blue";
+            document.getElementById('titleToday').textContent = "Today's Sales";
+            document.getElementById('dashToday').textContent = 'RM ' + todayTotal.toFixed(2);
+            
+            cardDrawer.style.display = 'block';
+            let totalInDrawer = cashFloat + todayCashSales;
+            document.getElementById('dashDrawer').textContent = 'RM ' + totalInDrawer.toFixed(2);
+            
+            cardWeek.style.display = 'block';
+            document.getElementById('dashWeek').textContent = 'RM ' + weekTotal.toFixed(2);
+            document.getElementById('breakdownTitle').textContent = "Daily Breakdown";
+        }
+
+        let breakdownHtml = '';
+        const sortedDates = Object.keys(dailyTotals).sort((a,b) => new Date(b) - new Date(a));
+        
+        sortedDates.forEach(date => {
+            breakdownHtml += `<div class="daily-item"><span>${date}</span><strong>RM ${dailyTotals[date].toFixed(2)}</strong></div>`;
+        });
+        document.getElementById('dashDailyList').innerHTML = breakdownHtml || '<div style="color:#999; padding: 10px;">No sales found.</div>';
+    }
+
+    function exportToCSV() {
+        if (sales.length === 0) {
+            alert("No sales data to export yet.");
+            return;
+        }
+
+        let csvContent = "Date & Time,Staff Member,Payment Method,Items Purchased,Discount (RM),Total (RM)\n";
+
+        sales.forEach(sale => {
+            let itemsList = "";
+            if (sale.items) {
+                itemsList = sale.items.map(i => `${i.qty}x ${i.name}`).join(' + ');
+            } else {
+                itemsList = `${sale.qty}x ${sale.product}`;
+            }
+
+            let cleanItems = `"${itemsList}"`;
+            let method = sale.method || 'Cash';
+            let discount = sale.discount || 0;
+            let time = `"${sale.time}"`;
+
+            csvContent += `${time},"${sale.staff}","${method}",${cleanItems},${discount},${sale.total.toFixed(2)}\n`;
+        });
+
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.setAttribute("href", url);
+        link.setAttribute("download", "Skinistry_Sales_Log.csv");
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+
+    function saveFloat() {
+        cashFloat = parseFloat(document.getElementById('dailyFloat').value) || 0;
+        localStorage.setItem('skinistry_float', cashFloat);
+        calculateDashboard(); 
+        
+        const msg = document.getElementById('floatMessage');
+        msg.textContent = "Float saved successfully!";
+        setTimeout(() => msg.textContent = '', 2000);
+    }
+
+    function saveProduct() {
+        const name = document.getElementById('editProdName').value.trim();
+        const price = parseFloat(document.getElementById('editProdPrice').value);
+        const addStock = parseInt(document.getElementById('editProdStock').value) || 0;
+        const color = document.getElementById('editProdColor').value;
+        if (!name || isNaN(price) || price < 0) return alert("Please enter a valid product name and price.");
+        let existingIndex = inventory.findIndex(i => i.name.toLowerCase() === name.toLowerCase());
+        if (existingIndex >= 0) {
+            inventory[existingIndex].price = price;
+            inventory[existingIndex].stock += addStock;
+            inventory[existingIndex].color = color;
+        } else {
+            inventory.push({ name: name, price: price, stock: addStock, color: color });
+        }
+        saveData();
+        renderProductGrid();
+        document.getElementById('editProdName').value = '';
+        document.getElementById('editProdPrice').value = '0';
+        document.getElementById('editProdStock').value = '0';
+        document.getElementById('editProdColor').value = '#e0f7fa';
+        const msg = document.getElementById('productMessage');
+        msg.textContent = "Product saved successfully!";
+        setTimeout(() => msg.textContent = '', 2000);
+    }
+
+    function editPrice(index) {
+        const currentPrice = inventory[index].price;
+        const newPrice = prompt(`Enter new price for ${inventory[index].name} (RM):`, currentPrice);
+        if (newPrice !== null && newPrice.trim() !== "" && !isNaN(newPrice) && parseFloat(newPrice) >= 0) {
+            inventory[index].price = parseFloat(newPrice);
+            saveData();
+            renderInventory();
+            renderProductGrid();
+        }
+    }
+
+    function editStock(index) {
+        const currentStock = inventory[index].stock;
+        const newStock = prompt(`Update stock count for ${inventory[index].name}:`, currentStock);
+        if (newStock !== null && newStock.trim() !== "" && !isNaN(newStock) && parseInt(newStock) >= 0) {
+            inventory[index].stock = parseInt(newStock);
+            saveData();
+            renderInventory();
+            renderProductGrid();
+        }
+    }
+
+    function addStaff() {
+        const name = document.getElementById('newStaffName').value.trim();
+        if (!name) return;
+        if (!staffList.includes(name)) {
+            staffList.push(name);
+            saveData();
+            initUI(); 
+            renderStaff();
+        }
+        document.getElementById('newStaffName').value = '';
+        const msg = document.getElementById('staffMessage');
+        msg.textContent = "Staff added successfully!";
+        setTimeout(() => msg.textContent = '', 2000);
+    }
+
+    function editStaff(index) {
+        const currentName = staffList[index];
+        const newName = prompt("Edit staff name:", currentName);
+        if (newName !== null && newName.trim() !== "") {
+            staffList[index] = newName.trim();
+            saveData();
+            initUI(); 
+            renderStaff();
+        }
+    }
+
+    function deleteStaff(index) {
+        if(confirm(`Are you sure you want to remove ${staffList[index]} from the system?`)) {
+            staffList.splice(index, 1);
+            saveData();
+            initUI();
+            renderStaff();
+        }
+    }
+
+    function deleteSale(filteredIndex) {
+        if(confirm("Are you sure you want to VOID this transaction? Stock will be returned.")) {
+            const voidedSale = currentlyFilteredSales[filteredIndex];
+            const masterIndex = sales.indexOf(voidedSale);
+            
+            if (voidedSale.items) {
+                voidedSale.items.forEach(cartItem => {
+                    let invIndex = inventory.findIndex(i => i.name === cartItem.name);
+                    if (invIndex >= 0) inventory[invIndex].stock += cartItem.qty;
+                });
+            } else {
+                let invIndex = inventory.findIndex(i => i.name === voidedSale.product);
+                if (invIndex >= 0) inventory[invIndex].stock += voidedSale.qty;
+            }
+            
+            sales.splice(masterIndex, 1);
+            saveData();
+            applyFilter(); 
+            renderProductGrid(); 
+        }
+    }
+
+    function deleteItem(index) {
+        if(confirm("Are you sure you want to DELETE this product from your inventory?")) {
+            inventory.splice(index, 1);
+            saveData();
+            renderInventory();
+            renderProductGrid(); 
+        }
+    }
+
+    function renderInventory() {
+        const tbody = document.getElementById('inventoryTable');
+        tbody.innerHTML = '';
+        inventory.forEach((item, index) => {
+            const tr = document.createElement('tr');
+            tr.setAttribute('data-index', index); 
+            const stockClass = item.stock <= 5 ? 'low-stock' : '';
+            const itemColor = item.color || '#ffffff';
+            tr.innerHTML = `
+                <td style="width: 40px; text-align: center;"><div class="drag-handle">☰</div></td>
+                <td style="width: 50px;"><div class="color-swatch" style="background-color: ${itemColor};"></div></td>
+                <td style="font-weight: 500;">${item.name}</td>
+                <td>RM ${item.price.toFixed(2)}</td>
+                <td class="${stockClass}">${item.stock}</td>
+                <td style="white-space: nowrap;">
+                    <div class="ios-action-group">
+                        <button class="ios-btn" onclick="editPrice(${index})">🏷️ Price</button>
+                        <button class="ios-btn" onclick="editStock(${index})">📦 Stock</button>
+                        <button class="ios-btn ios-btn-danger" onclick="deleteItem(${index})">✕ Delete</button>
+                    </div>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    function renderSales() {
+        const tbody = document.getElementById('salesTable');
+        tbody.innerHTML = '';
+        
+        if (currentlyFilteredSales.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 20px; color: #666;">No sales records found.</td></tr>';
+            return;
+        }
+
+        currentlyFilteredSales.forEach((sale, index) => {
+            const tr = document.createElement('tr');
+            
+            let itemsList = "";
+            if (sale.items) {
+                itemsList = sale.items.map(i => `${i.qty}x ${i.name}`).join('<br>');
+            } else {
+                itemsList = `${sale.qty}x ${sale.product}`;
+            }
+
+            if (sale.discount > 0) {
+                itemsList += `<br><small style="color:var(--danger)">(-RM ${sale.discount.toFixed(2)} discount)</small>`;
+            }
+
+            const paymentMethod = sale.method || 'Cash';
+
+            tr.innerHTML = `
+                <td><div style="font-size: 13px; color: #666;">${sale.time}</div></td>
+                <td style="font-weight: 500;">${sale.staff}</td>
+                <td><strong>${paymentMethod}</strong></td>
+                <td>${itemsList}</td>
+                <td style="font-weight: bold;">RM ${sale.total.toFixed(2)}</td>
+                <td style="white-space: nowrap;">
+                    <div class="ios-action-group">
+                        <button class="ios-btn" onclick="printReceipt(${index})">🖨️ Print</button>
+                        <button class="ios-btn ios-btn-danger" onclick="deleteSale(${index})">✕ Void</button>
+                    </div>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    function renderStaff() {
+        const tbody = document.getElementById('staffTable');
+        tbody.innerHTML = '';
+        staffList.forEach((staff, index) => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td style="font-weight: 500;">${staff}</td>
+                <td style="white-space: nowrap;">
+                    <div class="ios-action-group">
+                        <button class="ios-btn" onclick="editStaff(${index})">✏️ Edit</button>
+                        <button class="ios-btn ios-btn-danger" onclick="deleteStaff(${index})">✕ Delete</button>
+                    </div>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+</script>
+</body>
+</html>

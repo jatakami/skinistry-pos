@@ -299,22 +299,13 @@
         @media print {
             body { background: white; margin: 0; padding: 0; }
             .container { display: none !important; }
-            #printArea { 
-                display: block !important; 
-                width: 80mm; 
-                max-width: 100%;
-                margin: 0; 
-                font-family: monospace; 
-                font-size: 14px; 
-                color: #000;
-            }
         }
     </style>
 </head>
 <body>
 
 <div id="printArea" style="display: none;"></div>
-    
+
 <div class="container">
     <div class="header">
         <h2 style="margin: 0 0 5px 0;">Skinistry Booth POS</h2>
@@ -827,41 +818,33 @@
         const saleArray = isNewSale ? sales : currentlyFilteredSales;
         const sale = saleArray[index];
         
-        let itemsHtml = '';
+        // Create a text-only version of the receipt for Thermer
+        let textReceipt = "==== SKINISTRY ====\n";
+        textReceipt += `Date: ${sale.time}\n`;
+        textReceipt += `Staff: ${sale.staff}\n`;
+        textReceipt += `Method: ${sale.method || 'Cash'}\n`;
+        textReceipt += "-------------------\n";
+        
         if (sale.items) {
             sale.items.forEach(i => {
-                itemsHtml += `<div style="display:flex; justify-content:space-between; margin-bottom: 4px;"><span>${i.qty}x ${i.name}</span><span>${i.total.toFixed(2)}</span></div>`;
+                textReceipt += `${i.qty}x ${i.name}  RM ${i.total.toFixed(2)}\n`;
             });
         } else {
-            itemsHtml = `<div style="display:flex; justify-content:space-between; margin-bottom: 4px;"><span>${sale.qty}x ${sale.product}</span><span>${sale.total.toFixed(2)}</span></div>`;
+            textReceipt += `${sale.qty}x ${sale.product}  RM ${sale.total.toFixed(2)}\n`;
         }
         
-        let discountHtml = '';
-        if (sale.discount > 0) {
-            discountHtml = `<div style="display:flex; justify-content:space-between; margin-top: 5px;"><span>Discount</span><span>-${sale.discount.toFixed(2)}</span></div>`;
-        }
+        textReceipt += "-------------------\n";
+        if (sale.discount > 0) textReceipt += `Discount: -RM ${sale.discount.toFixed(2)}\n`;
+        textReceipt += `TOTAL: RM ${sale.total.toFixed(2)}\n`;
+        textReceipt += "===================\n";
+        textReceipt += " Thank you! @skinistry_my \n\n\n";
 
-        const receiptHtml = `
-            <div style="text-align:center; font-weight:bold; font-size:22px; margin-bottom:15px;">SKINISTRY</div>
-            <div style="margin-bottom:15px; border-bottom:1px dashed #000; padding-bottom:10px;">
-                <div>Date: ${sale.time}</div>
-                <div>Staff: ${sale.staff}</div>
-                <div>Method: ${sale.method || 'Cash'}</div>
-            </div>
-            <div style="margin-bottom:10px; border-bottom:1px dashed #000; padding-bottom:10px;">
-                ${itemsHtml}
-            </div>
-            ${discountHtml}
-            <div style="display:flex; justify-content:space-between; font-weight:bold; font-size:18px; margin-top:10px;">
-                <span>TOTAL</span>
-                <span>RM ${sale.total.toFixed(2)}</span>
-            </div>
-            <div style="text-align:center; margin-top:30px; font-size:14px;">Thank you for your purchase!</div>
-            <div style="text-align:center; margin-top:5px; font-size:12px;">@skinistry_my</div>
-        `;
-        
-        document.getElementById('printArea').innerHTML = receiptHtml;
-        window.print();
+        // Copy to iPad Clipboard
+        navigator.clipboard.writeText(textReceipt).then(() => {
+            alert("Receipt copied! Swipe over to Thermer to paste and print.");
+        }).catch(err => {
+            alert("Failed to copy receipt. " + err);
+        });
     }
 
     function applyFilter() {
@@ -1222,4 +1205,3 @@
 </script>
 </body>
 </html>
-

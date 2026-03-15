@@ -450,10 +450,10 @@
 
         <div style="background: #e8f4f8; padding: 15px; border-radius: 12px; border: 1px solid #bce8f1; margin-bottom: 25px;">
             <h3 style="margin-top: 0; color: var(--primary);">☁️ Cloud Sync Center</h3>
-            <p style="font-size: 13px; color: #555; margin-bottom: 15px;">Use these controls if your devices get out of sync due to offline sales. The iPad is your Master device.</p>
+            <p style="font-size: 13px; color: #555; margin-bottom: 15px;">Auto-sync is disabled. You must manually push or pull your data.</p>
             <div class="form-group flex-row">
                 <div style="flex: 1;">
-                    <button class="ios-btn" style="background: var(--ios-blue); color: white; width: 100%; justify-content: center; padding: 12px;" onclick="forcePush()">⬆️ Push to Cloud (Save iPad Data)</button>
+                    <button class="ios-btn" style="background: var(--ios-blue); color: white; width: 100%; justify-content: center; padding: 12px;" onclick="forcePush()">⬆️ Push to Cloud (Save Device Data)</button>
                 </div>
                 <div style="flex: 1;">
                     <button class="ios-btn" style="background: #FF9500; color: white; width: 100%; justify-content: center; padding: 12px;" onclick="forcePull()">⬇️ Pull from Cloud (Load Web Data)</button>
@@ -553,9 +553,9 @@
     let draggingRow = null;
     let currentlyFilteredSales = sales;
 
-    // OFFLINE-FIRST BOOT ARCHITECTURE
+    // V6: FULLY MANUAL SYNC ARCHITECTURE
     window.onload = async function() {
-        // Only fetch from cloud if the iPad has absolutely NO data (First Time Load)
+        // Only fetch from cloud if the device has absolutely NO data (First Time Load)
         if (inventory.length === 0 && sales.length === 0) {
             try {
                 document.getElementById('cloudStatus').innerHTML = "First Load: Fetching Cloud... ⏳";
@@ -577,11 +577,8 @@
                 staffList = ['Staff 1', 'Staff 2'];
             }
         } else {
-            // Normal Boot: Load instantly from safe local memory, do NOT overwrite from cloud.
-            document.getElementById('cloudStatus').innerHTML = "Local Data Loaded 📱";
-            
-            // Quietly attempt to push any offline sales up to the cloud in the background
-            forcePush(true); 
+            // Normal Boot: Load instantly from safe local memory. NO AUTO PUSH.
+            document.getElementById('cloudStatus').innerHTML = "Local Data Loaded 📱 (Manual Sync)";
         }
 
         currentlyFilteredSales = sales;
@@ -595,15 +592,15 @@
         localStorage.setItem('skinistry_staff', JSON.stringify(staffList));
     }
 
-    async function saveData() {
+    function saveData() {
         saveDataLocallyOnly();
-        // Quietly push to cloud after saving locally
-        forcePush(true); 
+        // Just alert the user that they have unsynced data, but do NOT push it automatically
+        document.getElementById('cloudStatus').innerHTML = "Unsynced Local Changes ⚠️";
     }
 
     // MANUAL SYNC CONTROLS
-    async function forcePush(isSilent = false) {
-        if (!isSilent) document.getElementById('syncMessage').textContent = "Pushing data to cloud...";
+    async function forcePush() {
+        document.getElementById('syncMessage').textContent = "Pushing data to cloud...";
         document.getElementById('cloudStatus').innerHTML = "Syncing... ⏳";
         
         try {
@@ -616,22 +613,18 @@
                     sales: sales
                 })
             });
-            if (!isSilent) {
-                document.getElementById('syncMessage').textContent = "✅ Successfully pushed iPad data to cloud!";
-                setTimeout(() => document.getElementById('syncMessage').textContent = '', 3000);
-            }
+            document.getElementById('syncMessage').textContent = "✅ Successfully pushed data to cloud!";
+            setTimeout(() => document.getElementById('syncMessage').textContent = '', 3000);
             document.getElementById('cloudStatus').innerHTML = "Cloud Synced ✅";
         } catch (error) {
-            if (!isSilent) {
-                document.getElementById('syncMessage').textContent = "❌ Failed to push. You are offline.";
-                setTimeout(() => document.getElementById('syncMessage').textContent = '', 3000);
-            }
-            document.getElementById('cloudStatus').innerHTML = "Offline Mode ⚠️ (Data safe on iPad)";
+            document.getElementById('syncMessage').textContent = "❌ Failed to push. You are offline.";
+            setTimeout(() => document.getElementById('syncMessage').textContent = '', 3000);
+            document.getElementById('cloudStatus').innerHTML = "Unsynced Local Changes ⚠️";
         }
     }
 
     async function forcePull() {
-        if(!confirm("WARNING: This will overwrite your iPad's data with whatever is in the Google Cloud. Are you sure you want to pull?")) return;
+        if(!confirm("WARNING: This will overwrite this device's data with whatever is in the Google Cloud. Are you sure you want to pull?")) return;
         
         document.getElementById('syncMessage').textContent = "Pulling latest data from cloud...";
         try {
